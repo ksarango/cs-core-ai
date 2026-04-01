@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "tools": [
+    {
+      "name": "verify-testing-jest",
+      "description": "Check Jest coverage against threshold (default 70%), propose tests for uncovered files",
+      "version": "0.1.0",
+      "file": ".claude/commands/verify-testing-jest.md",
+      "tags": "testing,jest,coverage",
+      "requires": "jest"
+    }
+  ]
+}
