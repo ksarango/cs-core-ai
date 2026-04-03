@@ -12,7 +12,7 @@ set -e
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-REPO_BASE="${CORE_AI_REPO:-https://raw.githubusercontent.com/CondorSoft/core-ai/main}"
+REPO_BASE="${CORE_AI_REPO:-https://raw.github.com/ksarango/cs-core-ai/main}"
 REPO_BASE="${REPO_BASE%/}"  # strip trailing slash
 # Security: only https:// is allowed — blocks file://, ftp://, and local reads
 case "$REPO_BASE" in
