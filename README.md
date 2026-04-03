@@ -90,6 +90,28 @@ Claude will detect your Jest config, run coverage, and report files below thresh
 sh <(curl -fsSL https://raw.githubusercontent.com/CondorSoft/core-ai/main/setup.sh) --update
 ```
 
+## Uninstalling
+
+Remove all installed tools:
+
+```sh
+sh <(curl -fsSL https://raw.githubusercontent.com/CondorSoft/core-ai/main/uninstall.sh)
+```
+
+Remove a specific tool:
+
+```sh
+sh uninstall.sh --tool verify-testing-jest
+```
+
+Skip the confirmation prompt (useful in CI):
+
+```sh
+sh uninstall.sh --yes
+```
+
+The uninstaller removes each tool's `.md` file, deletes `.claude/.core-ai-versions`, strips the `core-ai` block from `CLAUDE.md`, and removes `.claude/commands/` if it is left empty.
+
 ## Mirror / private registry
 
 Point at your own host:
