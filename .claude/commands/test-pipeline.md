@@ -45,6 +45,18 @@ Rules for the seed test:
 - Follow the stack's native test framework (Jest, Pytest, etc.)
 - Add a comment: `// seed test — replace or expand as the project grows`
 
+#### Step 2.1.1 — Verify Seed Tests Pass
+
+After writing each seed test, **run it immediately** to confirm the test environment is working:
+- JS/TS: `npx jest <path-to-seed-file> --no-coverage`
+- Python: `pytest <path-to-seed-file> -v`
+- Generic: `make test:unit` scoped to the seed file if possible
+
+**If the seed test fails:**
+- Diagnose the failure (missing deps, wrong import path, env not set up)
+- Fix the test or the environment — do NOT proceed to Step 3 until at least 1 test passes
+- Report what was fixed in the final report
+
 ### Step 2.2 — Load Shared Contracts
 
 Load the shared layer before delegating:
