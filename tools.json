@@ -7,7 +7,8 @@
       "version": "0.1.0",
       "file": ".claude/commands/test-check.md",
       "tags": "testing,qa,audit",
-      "requires": ""
+      "requires": "",
+      "deps": ".claude/shared/test-contract.md"
     },
     {
       "name": "test-pipeline",
@@ -15,7 +16,8 @@
       "version": "0.1.0",
       "file": ".claude/commands/test-pipeline.md",
       "tags": "testing,qa,pipeline",
-      "requires": ""
+      "requires": "",
+      "deps": ".claude/agents/stack-detector.md .claude/agents/qa-agent-js.md .claude/agents/qa-agent-python.md .claude/agents/qa-agent-generic.md .claude/shared/test-contract.md .claude/shared/test-report-format.md"
     },
     {
       "name": "test-fix",
@@ -23,7 +25,8 @@
       "version": "0.1.0",
       "file": ".claude/commands/test-fix.md",
       "tags": "testing,qa,fix",
-      "requires": ""
+      "requires": "",
+      "deps": ".claude/shared/test-report-format.md"
     }
   ]
 }

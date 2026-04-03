@@ -99,6 +99,16 @@ get_requires() {
     | sed 's/.*"requires": *"//;s/".*//'
 }
 
+# get_deps <tool_name>
+# Returns space-separated list of dependency file paths (e.g. agents, shared, prompts).
+get_deps() {
+  _tool="$1"
+  awk "/\"name\": *\"$_tool\"/,/\}/" "$TOOLS_JSON" \
+    | grep '"deps"' \
+    | head -1 \
+    | sed 's/.*"deps": *"//;s/".*//'
+}
+
 # list_tool_names
 # Prints all tool names from tools.json, one per line.
 list_tool_names() {
@@ -464,6 +474,34 @@ for TOOL in $SELECTED; do
       exit 1
     fi
   fi
+
+  # Install deps (agents, shared, prompts) declared for this tool
+  _deps=$(get_deps "$TOOL")
+  for _dep in $_deps; do
+    # Security: dep path must stay inside .claude/
+    case "$_dep" in
+      .claude/*) : ;;
+      *) echo "ERROR: dep path '$_dep' for '$TOOL' must be inside .claude/" >&2; exit 1 ;;
+    esac
+
+    mkdir -p "$(dirname "$_dep")"
+
+    if [ -f "$_dep" ] && [ -z "$FORCE" ]; then
+      echo "  skip (exists): $_dep"
+    else
+      DEST_TMP="$_dep.tmp"
+      if curl -fsSL "$REPO_BASE/$_dep" -o "$DEST_TMP"; then
+        mv "$DEST_TMP" "$_dep"
+        DEST_TMP=""
+        echo "  installed dep: $_dep"
+      else
+        echo "ERROR: failed to download dep '$_dep' for '$TOOL'" >&2
+        rm -f "$DEST_TMP"
+        DEST_TMP=""
+        exit 1
+      fi
+    fi
+  done
 done
 
 INSTALLED_TOOLS="${INSTALLED_TOOLS# }"
