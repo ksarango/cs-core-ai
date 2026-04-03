@@ -5,7 +5,7 @@ Shared Claude Code tools for any project. One command installs slash commands in
 ## Install
 
 ```sh
-sh <(curl -fsSL https://raw.githubusercontent.com/CondorSoft/core-ai/main/setup.sh)
+sh <(curl -fsSL https://raw.github.com/ksarango/cs-core-ai/main/setup.sh)
 ```
 
 The installer:
@@ -17,11 +17,7 @@ The installer:
 
 ## Available tools
 
-| Tool | What it does |
-|------|-------------|
-| `test-check` | Fast audit — checks test contract compliance (folder structure, scripts, config) without running tests. |
-| `test-pipeline` | Universal QA pipeline — detects stack (JS/Python/other), delegates to the right agent, runs all test suites. |
-| `test-fix` | Fix failing tests — categorizes failures by type, auto-repairs without weakening or deleting assertions. |
+See [TOOLS.md](TOOLS.md) for the full reference — commands, flags, folder structure, and stack support matrix.
 
 ## CLI flags
 
