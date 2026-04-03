@@ -19,7 +19,8 @@ case "$REPO_BASE" in
   https://*) : ;;
   *) echo "ERROR: CORE_AI_REPO must use https:// (got: $REPO_BASE)" >&2; exit 1 ;;
 esac
-TARGET=".claude"
+TARGET="$HOME/.claude"
+CLAUDE_MD="$TARGET/CLAUDE.md"
 VERSIONS_FILE="$TARGET/.core-ai-versions"
 TOOLS_JSON=$(mktemp /tmp/core-ai-tools-XXXXXX.json)
 VERSIONS_TMP=""  # set later; declared here so the trap covers it
@@ -150,27 +151,24 @@ Installed: /$_t ($_desc)"
   _block="$_block
 <!-- core-ai:end -->"
 
-  if [ ! -f CLAUDE.md ]; then
-    printf '%s\n' "$_block" > CLAUDE.md
-    echo "  created: CLAUDE.md (core-ai block)"
+  if [ ! -f "$CLAUDE_MD" ]; then
+    printf '%s\n' "$_block" > "$CLAUDE_MD"
+    echo "  created: $CLAUDE_MD (core-ai block)"
     return
   fi
 
-  if grep -q '<!-- *core-ai:start *-->' CLAUDE.md; then
-    # Replace existing block between HTML comment markers.
-    # Guard: check awk exit code, not file size — empty output is valid when
-    # CLAUDE.md contained only the core-ai block and nothing else.
-    if ! awk '/<!-- *core-ai:start *-->/,/<!-- *core-ai:end *-->/{next}1' CLAUDE.md > CLAUDE.md.tmp; then
-      rm -f CLAUDE.md.tmp
-      echo "ERROR: CLAUDE.md rewrite failed — aborting injection" >&2
+  if grep -q '<!-- *core-ai:start *-->' "$CLAUDE_MD"; then
+    if ! awk '/<!-- *core-ai:start *-->/,/<!-- *core-ai:end *-->/{next}1' "$CLAUDE_MD" > "$CLAUDE_MD.tmp"; then
+      rm -f "$CLAUDE_MD.tmp"
+      echo "ERROR: $CLAUDE_MD rewrite failed — aborting injection" >&2
       return 1
     fi
-    printf '%s\n' "$_block" >> CLAUDE.md.tmp
-    mv CLAUDE.md.tmp CLAUDE.md
-    echo "  updated: CLAUDE.md (core-ai block replaced)"
+    printf '%s\n' "$_block" >> "$CLAUDE_MD.tmp"
+    mv "$CLAUDE_MD.tmp" "$CLAUDE_MD"
+    echo "  updated: $CLAUDE_MD (core-ai block replaced)"
   else
-    printf '\n%s\n' "$_block" >> CLAUDE.md
-    echo "  updated: CLAUDE.md (core-ai block appended)"
+    printf '\n%s\n' "$_block" >> "$CLAUDE_MD"
+    echo "  updated: $CLAUDE_MD (core-ai block appended)"
   fi
 }
 
@@ -446,7 +444,7 @@ for TOOL in $SELECTED; do
     *) echo "ERROR: manifest file path '$_file' must be inside .claude/" >&2; exit 1 ;;
   esac
 
-  DEST="$_file"
+  DEST="$HOME/$_file"
   REMOTE="$REPO_BASE/$_file"
 
   mkdir -p "$(dirname "$DEST")"
@@ -484,16 +482,17 @@ for TOOL in $SELECTED; do
       *) echo "ERROR: dep path '$_dep' for '$TOOL' must be inside .claude/" >&2; exit 1 ;;
     esac
 
-    mkdir -p "$(dirname "$_dep")"
+    _dep_dest="$HOME/$_dep"
+    mkdir -p "$(dirname "$_dep_dest")"
 
-    if [ -f "$_dep" ] && [ -z "$FORCE" ]; then
-      echo "  skip (exists): $_dep"
+    if [ -f "$_dep_dest" ] && [ -z "$FORCE" ]; then
+      echo "  skip (exists): $_dep_dest"
     else
-      DEST_TMP="$_dep.tmp"
+      DEST_TMP="$_dep_dest.tmp"
       if curl -fsSL "$REPO_BASE/$_dep" -o "$DEST_TMP"; then
-        mv "$DEST_TMP" "$_dep"
+        mv "$DEST_TMP" "$_dep_dest"
         DEST_TMP=""
-        echo "  installed dep: $_dep"
+        echo "  installed dep: $_dep_dest"
       else
         echo "ERROR: failed to download dep '$_dep' for '$TOOL'" >&2
         rm -f "$DEST_TMP"

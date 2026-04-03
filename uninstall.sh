@@ -17,7 +17,8 @@ case "$REPO_BASE" in
   https://*) : ;;
   *) echo "ERROR: CORE_AI_REPO must use https:// (got: $REPO_BASE)" >&2; exit 1 ;;
 esac
-TARGET=".claude"
+TARGET="$HOME/.claude"
+CLAUDE_MD="$TARGET/CLAUDE.md"
 VERSIONS_FILE="$TARGET/.core-ai-versions"
 TOOLS_JSON=$(mktemp /tmp/core-ai-tools-XXXXXX.json)
 trap 'rm -f "$TOOLS_JSON"' EXIT
@@ -61,13 +62,30 @@ get_file_from_manifest() {
     | sed 's/.*"file": *"//;s/".*//'
 }
 
+# get_deps_from_manifest <tool_name>
+# Returns space-separated dep paths declared for a tool.
+get_deps_from_manifest() {
+  _tool="$1"
+  awk "/\"name\": *\"$_tool\"/,/\}/" "$TOOLS_JSON" \
+    | grep '"deps"' \
+    | head -1 \
+    | sed 's/.*"deps": *"//;s/".*//'
+}
+
+# list_all_tool_names
+# Prints all tool names from the manifest, one per line.
+list_all_tool_names() {
+  grep '"name"' "$TOOLS_JSON" | sed 's/.*"name": *"//;s/".*//'
+}
+
 # resolve_file <tool_name>
-# Returns the file path for a tool — manifest first, then conventional fallback.
+# Returns the absolute file path for a tool — manifest first, then conventional fallback.
 resolve_file() {
   _tool="$1"
   _f=""
   if [ -s "$TOOLS_JSON" ]; then
     _f=$(get_file_from_manifest "$_tool")
+    [ -n "$_f" ] && _f="$HOME/$_f"
   fi
   # Fallback: conventional location used by the installer
   if [ -z "$_f" ]; then
@@ -77,26 +95,26 @@ resolve_file() {
 }
 
 # strip_claude_md_block
-# Removes the <!-- core-ai:start --> ... <!-- core-ai:end --> block from CLAUDE.md.
+# Removes the <!-- core-ai:start --> ... <!-- core-ai:end --> block from $CLAUDE_MD.
 strip_claude_md_block() {
-  if [ ! -f CLAUDE.md ]; then
+  if [ ! -f "$CLAUDE_MD" ]; then
     return
   fi
-  if ! grep -q '<!-- *core-ai:start *-->' CLAUDE.md; then
+  if ! grep -q '<!-- *core-ai:start *-->' "$CLAUDE_MD"; then
     return
   fi
   if ! awk '/<!-- *core-ai:start *-->/,/<!-- *core-ai:end *-->/{next}1' \
-      CLAUDE.md > CLAUDE.md.tmp; then
-    rm -f CLAUDE.md.tmp
-    echo "WARNING: failed to strip core-ai block from CLAUDE.md" >&2
+      "$CLAUDE_MD" > "$CLAUDE_MD.tmp"; then
+    rm -f "$CLAUDE_MD.tmp"
+    echo "WARNING: failed to strip core-ai block from $CLAUDE_MD" >&2
     return
   fi
-  mv CLAUDE.md.tmp CLAUDE.md
-  echo "  updated: CLAUDE.md (core-ai block removed)"
+  mv "$CLAUDE_MD.tmp" "$CLAUDE_MD"
+  echo "  updated: $CLAUDE_MD (core-ai block removed)"
 }
 
 # update_claude_md_block
-# Rewrites the core-ai block in CLAUDE.md with the remaining tools.
+# Rewrites the core-ai block in $CLAUDE_MD with the remaining tools.
 # If no tools remain, removes the block entirely.
 update_claude_md_block() {
   _remaining="$1"
@@ -105,7 +123,7 @@ update_claude_md_block() {
     return
   fi
 
-  if [ ! -f CLAUDE.md ] || ! grep -q '<!-- *core-ai:start *-->' CLAUDE.md; then
+  if [ ! -f "$CLAUDE_MD" ] || ! grep -q '<!-- *core-ai:start *-->' "$CLAUDE_MD"; then
     return
   fi
 
@@ -120,14 +138,14 @@ Installed: /$_t"
 <!-- core-ai:end -->"
 
   if ! awk '/<!-- *core-ai:start *-->/,/<!-- *core-ai:end *-->/{next}1' \
-      CLAUDE.md > CLAUDE.md.tmp; then
-    rm -f CLAUDE.md.tmp
-    echo "WARNING: failed to update core-ai block in CLAUDE.md" >&2
+      "$CLAUDE_MD" > "$CLAUDE_MD.tmp"; then
+    rm -f "$CLAUDE_MD.tmp"
+    echo "WARNING: failed to update core-ai block in $CLAUDE_MD" >&2
     return
   fi
-  printf '%s\n' "$_block" >> CLAUDE.md.tmp
-  mv CLAUDE.md.tmp CLAUDE.md
-  echo "  updated: CLAUDE.md (core-ai block updated)"
+  printf '%s\n' "$_block" >> "$CLAUDE_MD.tmp"
+  mv "$CLAUDE_MD.tmp" "$CLAUDE_MD"
+  echo "  updated: $CLAUDE_MD (core-ai block updated)"
 }
 
 # ---------------------------------------------------------------------------
@@ -215,7 +233,20 @@ echo ""
 echo "Removing core-ai tools..."
 
 REMOVED_COUNT=0
+
+# Build list of tools NOT being removed (to detect shared deps)
+REMAINING_NOW=""
+for _t in $INSTALLED_TOOLS; do
+  _keep=1
+  for _r in $TO_REMOVE; do
+    [ "$_t" = "$_r" ] && _keep=0 && break
+  done
+  [ "$_keep" -eq 1 ] && REMAINING_NOW="$REMAINING_NOW $_t"
+done
+REMAINING_NOW="${REMAINING_NOW# }"
+
 for _t in $TO_REMOVE; do
+  # Remove the main command file
   _f=$(resolve_file "$_t")
   if [ -f "$_f" ]; then
     rm -f "$_f"
@@ -224,6 +255,30 @@ for _t in $TO_REMOVE; do
   else
     echo "  missing (already gone): $_f"
   fi
+
+  # Remove deps that are not shared with remaining tools
+  _deps=$(get_deps_from_manifest "$_t")
+  for _dep in $_deps; do
+    _dep_path="$HOME/$_dep"
+    [ ! -f "$_dep_path" ] && continue
+
+    # Check if any remaining tool also declares this dep
+    _shared=0
+    for _other in $REMAINING_NOW; do
+      _other_deps=$(get_deps_from_manifest "$_other")
+      for _od in $_other_deps; do
+        [ "$_od" = "$_dep" ] && _shared=1 && break
+      done
+      [ "$_shared" -eq 1 ] && break
+    done
+
+    if [ "$_shared" -eq 0 ]; then
+      rm -f "$_dep_path"
+      echo "  removed dep: $_dep_path"
+    else
+      echo "  keep dep (shared): $_dep_path"
+    fi
+  done
 done
 
 # ---------------------------------------------------------------------------
@@ -261,13 +316,15 @@ fi
 update_claude_md_block "$REMAINING_TOOLS"
 
 # ---------------------------------------------------------------------------
-# Step 8: Clean up empty commands directory (full uninstall only)
+# Step 8: Clean up empty subdirectories (full uninstall only)
 # ---------------------------------------------------------------------------
 if [ -z "$TOOL_FLAG" ]; then
-  if [ -d "$TARGET/commands" ] && [ -z "$(ls -A "$TARGET/commands" 2>/dev/null)" ]; then
-    rmdir "$TARGET/commands"
-    echo "  removed: $TARGET/commands (empty)"
-  fi
+  for _subdir in commands agents shared prompts; do
+    if [ -d "$TARGET/$_subdir" ] && [ -z "$(ls -A "$TARGET/$_subdir" 2>/dev/null)" ]; then
+      rmdir "$TARGET/$_subdir"
+      echo "  removed: $TARGET/$_subdir (empty)"
+    fi
+  done
 fi
 
 # ---------------------------------------------------------------------------
