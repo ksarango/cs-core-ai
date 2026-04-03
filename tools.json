@@ -1,4 +1,29 @@
 {
   "version": "1",
-  "tools": []
+  "tools": [
+    {
+      "name": "test-check",
+      "description": "Fast audit — checks test contract compliance (folder structure, scripts, config) without running tests",
+      "version": "0.1.0",
+      "file": ".claude/commands/test-check.md",
+      "tags": "testing,qa,audit",
+      "requires": ""
+    },
+    {
+      "name": "test-pipeline",
+      "description": "Universal QA pipeline — detects stack (JS/Python/other), delegates to the right agent, runs all test suites",
+      "version": "0.1.0",
+      "file": ".claude/commands/test-pipeline.md",
+      "tags": "testing,qa,pipeline",
+      "requires": ""
+    },
+    {
+      "name": "test-fix",
+      "description": "Fix failing tests — detects stack, categorizes failures, auto-repairs without weakening assertions",
+      "version": "0.1.0",
+      "file": ".claude/commands/test-fix.md",
+      "tags": "testing,qa,fix",
+      "requires": ""
+    }
+  ]
 }

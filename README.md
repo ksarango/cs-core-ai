@@ -17,7 +17,11 @@ The installer:
 
 ## Available tools
 
-No tools are currently registered.
+| Tool | What it does |
+|------|-------------|
+| `test-check` | Fast audit — checks test contract compliance (folder structure, scripts, config) without running tests. |
+| `test-pipeline` | Universal QA pipeline — detects stack (JS/Python/other), delegates to the right agent, runs all test suites. |
+| `test-fix` | Fix failing tests — categorizes failures by type, auto-repairs without weakening or deleting assertions. |
 
 ## CLI flags
 
