@@ -10,22 +10,20 @@ sh <(curl -fsSL https://raw.githubusercontent.com/CondorSoft/core-ai/main/setup.
 
 The installer:
 1. Fetches the tool registry (`tools.json`)
-2. Auto-detects your stack (e.g. detects Jest in `package.json` and pre-selects the coverage tool)
+2. Auto-detects your stack and pre-selects relevant tools
 3. Shows an interactive picker — choose tools by number, type `all`, or press Enter for recommended
 4. Installs selected tools into `.claude/commands/`
 5. Updates `CLAUDE.md` with a usage block (idempotent — safe to re-run)
 
 ## Available tools
 
-| Tool | What it does |
-|------|-------------|
-| `verify-testing-jest` | Checks Jest coverage against a threshold (default 70%). Shows files below threshold sorted by coverage. Offers to propose tests for the lowest-covered files inline — never writes to disk. |
+No tools are currently registered.
 
 ## CLI flags
 
 ```sh
 # Install a specific tool directly (CI-safe, non-interactive)
-sh setup.sh --tool verify-testing-jest
+sh setup.sh --tool <tool-name>
 
 # Overwrite existing files (useful after a tool update)
 sh setup.sh --force
@@ -42,12 +40,12 @@ Every tool is described by a flat JSON entry:
 
 ```json
 {
-  "name": "verify-testing-jest",
-  "description": "Check Jest coverage against threshold (default 70%), propose tests for uncovered files",
+  "name": "tool-name",
+  "description": "What the tool does",
   "version": "0.1.0",
-  "file": ".claude/commands/verify-testing-jest.md",
-  "tags": "testing,jest,coverage",
-  "requires": "jest"
+  "file": ".claude/commands/tool-name.md",
+  "tags": "tag1,tag2",
+  "requires": "dependency"
 }
 ```
 
@@ -58,7 +56,7 @@ The installer fetches this file, parses it with `grep`/`sed` (no `jq` dependency
 After installation, each tool is recorded in `.core-ai-versions`:
 
 ```
-verify-testing-jest@0.1.0
+tool-name@0.1.0
 ```
 
 Re-running the installer skips already-installed versions. `--update` checks each entry against the registry and prompts you to upgrade tools that have newer versions available. Re-installs merge into this file rather than overwriting it.
@@ -79,10 +77,8 @@ The installer appends a block to your project's `CLAUDE.md` listing the installe
 After install, use a tool as a Claude Code slash command:
 
 ```
-/verify-testing-jest
+/tool-name
 ```
-
-Claude will detect your Jest config, run coverage, and report files below threshold.
 
 ## Updating tools
 
@@ -101,7 +97,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/CondorSoft/core-ai/main/uninst
 Remove a specific tool:
 
 ```sh
-sh uninstall.sh --tool verify-testing-jest
+sh uninstall.sh --tool <tool-name>
 ```
 
 Skip the confirmation prompt (useful in CI):
